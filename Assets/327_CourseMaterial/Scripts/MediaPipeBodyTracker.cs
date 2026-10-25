@@ -13,12 +13,20 @@ public class MediaPipeBodyTracker : MonoBehaviour
     [Header("Hand Data")]
     [SerializeField] private Vector3 leftHandPosition;
     [SerializeField] private bool leftHandPinch;
+
+    [SerializeField] private bool leftHandScissors;
+    [SerializeField] private bool leftHandRock;
+    [SerializeField] private bool leftHandPaper;
+
     [SerializeField] private Vector3 rightHandPosition;
     [SerializeField] private bool rightHandPinch;
 
-    [Header("Body Data")]
-    [SerializeField] private Vector3 torsoPosition;
-    [SerializeField] private Vector3 headPosition;
+
+    [SerializeField] private bool rightHandScissors;
+    [SerializeField] private bool rightHandRock;
+    [SerializeField] private bool rightHandPaper;
+
+
 
     [Header("Debug / Diagnostics")]
     [SerializeField] private bool verboseLogging = false;
@@ -28,14 +36,25 @@ public class MediaPipeBodyTracker : MonoBehaviour
 
     [Header("Detection Settings")]
     [SerializeField, Range(0.001f, 0.2f)] private float pinchThreshold = 0.035f;
+    [SerializeField, Range(0.001f, 0.2f)] private float rockThreshold = 0.035f;
+    [SerializeField, Range(0.001f, 0.2f)] private float paperThreshold = 0.08f;
 
     private readonly object dataLock = new object();
     private Vector3 pendingLeftHandPosition;
     private Vector3 pendingRightHandPosition;
-    private Vector3 pendingTorsoPosition;
-    private Vector3 pendingHeadPosition;
+ 
     private bool pendingLeftPinch;
+
+    private bool pendingLeftScissors;
+    private bool pendingLeftRock;
+    private bool pendingLeftPaper;
+
     private bool pendingRightPinch;
+
+    private bool pendingRightScissors;
+    private bool pendingRightRock;
+    private bool pendingRightPaper;
+
     private bool leftHandTracked;
     private bool rightHandTracked;
     private bool poseTracked;
@@ -48,12 +67,27 @@ public class MediaPipeBodyTracker : MonoBehaviour
 
     public Vector3 LeftHandPosition => leftHandPosition;
     public bool LeftHandPinch => leftHandPinch;
+
+    public bool LeftHandScissors => leftHandScissors;
+    public bool LeftHandRock => leftHandRock;
+    public bool LeftHandPaper => leftHandPaper;
+
     public bool LeftHandTracked => isActiveAndEnabled && leftHandTracked;
     public Vector3 RightHandPosition => rightHandPosition;
     public bool RightHandPinch => rightHandPinch;
+
+    public bool RightHandScissors => rightHandScissors;
+    public bool RightHandRock => rightHandRock;
+    public bool RightHandPaper => rightHandPaper;
+
     public bool RightHandTracked => isActiveAndEnabled && rightHandTracked;
-    public Vector3 TorsoPosition => torsoPosition;
-    public Vector3 HeadPosition => headPosition;
+
+    private bool summonRock = false;
+    private bool summonPaper = false;
+    private bool summonScissors = false;
+
+    public Summoner summoner;
+  
 
     private void OnEnable()
     {
@@ -91,6 +125,7 @@ public class MediaPipeBodyTracker : MonoBehaviour
         {
             leftHandTracked = rightHandTracked = poseTracked = false;
             leftHandPinch = rightHandPinch = false;
+            leftHandScissors = rightHandScissors = leftHandRock = rightHandRock = leftHandPaper = rightHandPaper = false;
             leftHandPosition = rightHandPosition = Vector3.zero;
         }
     }
@@ -125,7 +160,6 @@ public class MediaPipeBodyTracker : MonoBehaviour
         {
             graphRunner.OnLeftHandLandmarksOutput += HandleLeftHand;
             graphRunner.OnRightHandLandmarksOutput += HandleRightHand;
-            graphRunner.OnPoseWorldLandmarksOutput += HandlePoseWorld;
             subscribedRunner = graphRunner;
             hasSubscriptions = true;
 
@@ -158,7 +192,6 @@ public class MediaPipeBodyTracker : MonoBehaviour
             {
                 runner.OnLeftHandLandmarksOutput -= HandleLeftHand;
                 runner.OnRightHandLandmarksOutput -= HandleRightHand;
-                runner.OnPoseWorldLandmarksOutput -= HandlePoseWorld;
             }
             catch (System.NullReferenceException) { }
         }
@@ -177,11 +210,17 @@ public class MediaPipeBodyTracker : MonoBehaviour
                 {
                     leftHandPosition = pendingLeftHandPosition;
                     leftHandPinch = pendingLeftPinch;
+
+                    leftHandScissors = pendingLeftScissors;
+                    leftHandRock = pendingLeftRock;
+                    leftHandPaper = pendingLeftPaper;
                 }
                 else
                 {
                     leftHandPosition = Vector3.zero;
                     leftHandPinch = false;
+
+                    leftHandScissors = leftHandRock = leftHandPaper = false;
                 }
 
                 leftDirty = false;
@@ -193,31 +232,38 @@ public class MediaPipeBodyTracker : MonoBehaviour
                 {
                     rightHandPosition = pendingRightHandPosition;
                     rightHandPinch = pendingRightPinch;
+
+                    rightHandScissors = pendingRightScissors;
+                    rightHandRock = pendingRightRock;
+                    rightHandPaper = pendingRightPaper;
                 }
                 else
                 {
                     rightHandPosition = Vector3.zero;
                     rightHandPinch = false;
+
+                    rightHandScissors = rightHandRock = rightHandPaper = false;
                 }
 
                 rightDirty = false;
             }
+        }
 
-            if (poseDirty)
-            {
-                if (poseTracked)
-                {
-                    torsoPosition = pendingTorsoPosition;
-                    headPosition = pendingHeadPosition;
-                }
-                else
-                {
-                    torsoPosition = Vector3.zero;
-                    headPosition = Vector3.zero;
-                }
+        if (summonRock){
+            summoner.Create(1,1);
+            summonRock = false;
+        }
 
-                poseDirty = false;
-            }
+        if (summonPaper)
+        {
+            summoner.Create(1,2);
+            summonPaper = false;
+        }
+
+        if (summonScissors)
+        {
+            summoner.Create(1,3);
+            summonScissors = false;
         }
     }
 
@@ -238,12 +284,17 @@ public class MediaPipeBodyTracker : MonoBehaviour
                 leftHandTracked = true;
                 pendingLeftHandPosition = ToUnityVector(landmarkList.Landmark[0]);
                 pendingLeftPinch = IsPinching(landmarkList);
+
+                pendingLeftScissors = IsScissors(landmarkList);
+                pendingLeftRock = IsRock(landmarkList);
+                pendingLeftPaper = IsPaper(landmarkList);
             }
             else
             {
                 leftHandTracked = false;
                 pendingLeftHandPosition = Vector3.zero;
                 pendingLeftPinch = false;
+                pendingLeftScissors = pendingLeftRock = pendingLeftPaper = false;
             }
 
             leftDirty = true;
@@ -267,52 +318,21 @@ public class MediaPipeBodyTracker : MonoBehaviour
                 rightHandTracked = true;
                 pendingRightHandPosition = ToUnityVector(landmarkList.Landmark[0]);
                 pendingRightPinch = IsPinching(landmarkList);
+
+                pendingRightScissors = IsScissors(landmarkList);
+                pendingRightRock = IsRock(landmarkList);
+                pendingRightPaper = IsPaper(landmarkList);
             }
             else
             {
                 rightHandTracked = false;
                 pendingRightHandPosition = Vector3.zero;
                 pendingRightPinch = false;
+
+                pendingRightScissors = pendingRightRock = pendingRightPaper = false;
             }
 
             rightDirty = true;
-        }
-    }
-
-    private void HandlePoseWorld(object sender, OutputStream<LandmarkList>.OutputEventArgs eventArgs)
-    {
-        posePacketCount++;
-        if (verboseLogging && (posePacketCount % 30 == 0))
-        {
-            Debug.Log($"{nameof(MediaPipeBodyTracker)} received {posePacketCount} pose packets");
-        }
-
-        var worldLandmarks = ExtractWorldLandmarks(eventArgs.packet);
-
-        lock (dataLock)
-        {
-            if (worldLandmarks != null && worldLandmarks.Landmark.Count >= 33)
-            {
-                poseTracked = true;
-                pendingHeadPosition = ToUnityVector(worldLandmarks.Landmark[0]);
-
-                var leftShoulder = ToUnityVector(worldLandmarks.Landmark[11]);
-                var rightShoulder = ToUnityVector(worldLandmarks.Landmark[12]);
-                var leftHip = ToUnityVector(worldLandmarks.Landmark[23]);
-                var rightHip = ToUnityVector(worldLandmarks.Landmark[24]);
-
-                var shouldersCenter = (leftShoulder + rightShoulder) * 0.5f;
-                var hipsCenter = (leftHip + rightHip) * 0.5f;
-                pendingTorsoPosition = (shouldersCenter + hipsCenter) * 0.5f;
-            }
-            else
-            {
-                poseTracked = false;
-                pendingHeadPosition = Vector3.zero;
-                pendingTorsoPosition = Vector3.zero;
-            }
-
-            poseDirty = true;
         }
     }
 
@@ -364,6 +384,88 @@ public class MediaPipeBodyTracker : MonoBehaviour
                 return false;
             }
         }
+
+        return true;
+    }
+
+    private bool IsScissors(NormalizedLandmarkList landmarks)
+    {
+        return false;
+    }
+
+    private bool IsRock(NormalizedLandmarkList landmarks)
+    {
+        var finger1Tip = landmarks.Landmark[8];
+        var finger2Tip = landmarks.Landmark[12];
+        var finger3Tip = landmarks.Landmark[16];
+        var finger4Tip = landmarks.Landmark[20];
+
+        var finger1bTip = landmarks.Landmark[5];
+        var finger2bTip = landmarks.Landmark[9];
+        var finger3bTip = landmarks.Landmark[13];
+        var finger4bTip = landmarks.Landmark[17];
+
+        var finger1 = new Vector2(finger1Tip.X, finger1Tip.Y);
+        var finger2 = new Vector2(finger2Tip.X, finger2Tip.Y);
+        var finger3 = new Vector2(finger3Tip.X, finger3Tip.Y);
+        var finger4 = new Vector2(finger4Tip.X, finger4Tip.Y);
+
+        var finger1b = new Vector2(finger1bTip.X, finger1bTip.Y);
+        var finger2b = new Vector2(finger2bTip.X, finger2bTip.Y);
+        var finger3b = new Vector2(finger3bTip.X, finger3bTip.Y);
+        var finger4b = new Vector2(finger4bTip.X, finger4bTip.Y);
+
+        //check each fingertip's distance to the  joints
+        if (Vector2.Distance(finger1, finger1b) > rockThreshold || Vector2.Distance(finger2, finger2b) > rockThreshold
+        || Vector2.Distance(finger3, finger3b) > rockThreshold || Vector2.Distance(finger4, finger4b) > rockThreshold)
+        {
+            return false;
+        }
+
+        //summoner.Create(1,1);
+        summonRock = true;
+        return true;
+    }
+
+    private bool IsPaper(NormalizedLandmarkList landmarks)
+    {
+        var finger1Tip = landmarks.Landmark[8];
+        var finger2Tip = landmarks.Landmark[12];
+        var finger3Tip = landmarks.Landmark[16];
+        var finger4Tip = landmarks.Landmark[20];
+
+        var finger1bTip = landmarks.Landmark[5];
+        var finger2bTip = landmarks.Landmark[9];
+        var finger3bTip = landmarks.Landmark[13];
+        var finger4bTip = landmarks.Landmark[17];
+
+        var finger1 = new Vector2(finger1Tip.X, finger1Tip.Y);
+        var finger2 = new Vector2(finger2Tip.X, finger2Tip.Y);
+        var finger3 = new Vector2(finger3Tip.X, finger3Tip.Y);
+        var finger4 = new Vector2(finger4Tip.X, finger4Tip.Y);
+
+        var finger1b = new Vector2(finger1bTip.X, finger1bTip.Y);
+        var finger2b = new Vector2(finger2bTip.X, finger2bTip.Y);
+        var finger3b = new Vector2(finger3bTip.X, finger3bTip.Y);
+        var finger4b = new Vector2(finger4bTip.X, finger4bTip.Y);
+
+        //check fingertip to fingertip distance (close) and fingertip to joint distance (far)
+
+        
+        if (Vector2.Distance(finger1, finger2) > paperThreshold || Vector2.Distance(finger2, finger3) > paperThreshold 
+        || Vector2.Distance(finger3, finger4) > paperThreshold + .35f) {
+            //Debug.Log ("distances " + Vector2.Distance(finger1, finger2) + " " + Vector2.Distance(finger2, finger3) + " " + Vector2.Distance(finger3, finger4));
+            return false;
+        }
+
+        // if ((Vector2.Distance(finger1, finger2) > paperThreshold || Vector2.Distance(finger2, finger3) > paperThreshold 
+        // || Vector2.Distance(finger3, finger4) > paperThreshold) && 
+        // (Vector2.Distance(finger1, finger1b) < rockThreshold 
+        // && Vector2.Distance(finger2, finger2b) < rockThreshold && Vector2.Distance(finger3, finger3b) < rockThreshold 
+        // && Vector2.Distance(finger4, finger4b) < rockThreshold))
+        // {
+        //     return false;
+        // }
 
         return true;
     }

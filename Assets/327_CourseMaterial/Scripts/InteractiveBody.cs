@@ -163,6 +163,10 @@ public class InteractiveBody : MonoBehaviour
         {
             bool handTracked = mp != null && (hand == 0 ? mp.LeftHandTracked : mp.RightHandTracked);
             bool handPinched = handTracked && (hand == 0 ? mp.LeftHandPinch : mp.RightHandPinch);
+            // bool handScissor = handTracked && (hand == 0 ? mp.LeftHandScissors : mp.RightHandScissors);
+            // bool handRock = handTracked && (hand == 0 ? mp.LeftHandRock : mp.RightHandRock);
+            // bool handPaper = handTracked && (hand == 0 ? mp.LeftHandPaper : mp.RightHandPaper);
+
             interactivePoint[hand].SetActive(handPinched);
             if (handPinched && cam != null)
             {
