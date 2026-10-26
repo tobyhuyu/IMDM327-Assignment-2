@@ -11,7 +11,7 @@ public class Summoner : MonoBehaviour
     public int entityLim = 100;
 
     private int entityCount;
-    public float cooldown = 3f;
+    public float cooldown = 2f;
     private bool canSummon;
     private float timer = 0f;
 
@@ -21,7 +21,7 @@ public class Summoner : MonoBehaviour
         public int type;
         public int side;
     }
-    private Summon[] summons; 
+    public Summon[] summons; 
     private GameObject[] prefabs;
 
     private void Start()
@@ -62,17 +62,27 @@ public class Summoner : MonoBehaviour
 
         if (side == 1 && !canSummon)
         {
-            Debug.Log("Wait for Cooldown!");
+           // Debug.Log("Wait for Cooldown!");
             return;
         }
 
         GameObject summoned = Instantiate(prefabs[type]);
-        summoned.transform.position = new Vector3(0, 1, 0);
-        summons[entityCount].obj = summoned;
-        //change color to blue and change position to correct side + random x value
 
+        if (side == 0)
+        {
+            summoned.transform.position = new Vector3(Random.Range(-6.8f, 6.8f), 0, Random.Range(17.5f, 12.7f));
+            //change color to red
+
+        } else
+        {
+            summoned.transform.position = new Vector3(Random.Range(-5.5f, 5.8f), 0, Random.Range(2.5f, 5f));
+            //change color to blue
+        }
+        
         summons[entityCount].type = type;
         summons[entityCount].side = side;
+        summons[entityCount].obj = summoned;
+        
         Debug.Log("Created summon type " + type + " on side " + side);
         entityCount++;
 

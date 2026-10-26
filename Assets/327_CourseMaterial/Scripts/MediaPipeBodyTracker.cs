@@ -37,7 +37,8 @@ public class MediaPipeBodyTracker : MonoBehaviour
     [Header("Detection Settings")]
     [SerializeField, Range(0.001f, 0.2f)] private float pinchThreshold = 0.035f;
     [SerializeField, Range(0.001f, 0.2f)] private float rockThreshold = 0.035f;
-    [SerializeField, Range(0.001f, 0.2f)] private float paperThreshold = 0.08f;
+    [SerializeField, Range(0.001f, 0.2f)] private float paperThreshold = 0.5f;
+    [SerializeField, Range(0.001f, 0.2f)] private float scissorsThreshold = 0.3f;
 
     private readonly object dataLock = new object();
     private Vector3 pendingLeftHandPosition;
@@ -86,11 +87,13 @@ public class MediaPipeBodyTracker : MonoBehaviour
     private bool summonPaper = false;
     private bool summonScissors = false;
 
-    public Summoner summoner;
+    private Summoner summoner;
   
 
     private void OnEnable()
     {
+        summoner = GetComponent<Summoner>();
+
         if (graphRunner == null)
         {
             graphRunner = FindObjectOfType<HolisticTrackingGraph>();
@@ -254,17 +257,19 @@ public class MediaPipeBodyTracker : MonoBehaviour
             summonRock = false;
         }
 
+        if (summonScissors)
+        {
+            summoner.Create(1,3);
+            summonScissors = false;
+        }
+        
         if (summonPaper)
         {
             summoner.Create(1,2);
             summonPaper = false;
         }
 
-        if (summonScissors)
-        {
-            summoner.Create(1,3);
-            summonScissors = false;
-        }
+        
     }
 
     private void HandleLeftHand(object sender, OutputStream<NormalizedLandmarkList>.OutputEventArgs eventArgs)
@@ -390,7 +395,34 @@ public class MediaPipeBodyTracker : MonoBehaviour
 
     private bool IsScissors(NormalizedLandmarkList landmarks)
     {
-        return false;
+        var thumbL = landmarks.Landmark[4];
+        var finger1Tip = landmarks.Landmark[8];
+        var finger2Tip = landmarks.Landmark[12];
+        var finger3Tip = landmarks.Landmark[16];
+        var finger4Tip = landmarks.Landmark[20];
+        var wristL = landmarks.Landmark[0];
+
+        var thumb = new Vector2(thumbL.X, thumbL.Y);
+        var finger1 = new Vector2(finger1Tip.X, finger1Tip.Y);
+        var finger2 = new Vector2(finger2Tip.X, finger2Tip.Y);
+        var finger3 = new Vector2(finger3Tip.X, finger3Tip.Y);
+        var finger4 = new Vector2(finger4Tip.X, finger4Tip.Y);
+        var wrist = new Vector2(wristL.X, wristL.Y);
+
+        // Debug.Log("distances " + Vector2.Distance(finger1,wrist) + " " + Vector2.Distance(finger2,wrist) + " " 
+        // + Vector2.Distance(finger3,wrist) + " " + Vector2.Distance(finger4,wrist));
+        
+        //check thumb, pinky and ring finger distance to palm (close) 
+        //and check pointer and middle finger to palm (far)
+        if((Vector2.Distance(thumb, wrist) > scissorsThreshold || Vector2.Distance(finger3, wrist) > scissorsThreshold
+        || Vector2.Distance(finger4, wrist) > scissorsThreshold) || (Vector2.Distance(finger1, wrist) < paperThreshold
+        || Vector2.Distance(finger2, wrist) < paperThreshold))
+        {
+            return false;
+        }
+
+        summonScissors = true;
+        return true;
     }
 
     private bool IsRock(NormalizedLandmarkList landmarks)
@@ -422,7 +454,6 @@ public class MediaPipeBodyTracker : MonoBehaviour
             return false;
         }
 
-        //summoner.Create(1,1);
         summonRock = true;
         return true;
     }
@@ -433,40 +464,27 @@ public class MediaPipeBodyTracker : MonoBehaviour
         var finger2Tip = landmarks.Landmark[12];
         var finger3Tip = landmarks.Landmark[16];
         var finger4Tip = landmarks.Landmark[20];
-
-        var finger1bTip = landmarks.Landmark[5];
-        var finger2bTip = landmarks.Landmark[9];
-        var finger3bTip = landmarks.Landmark[13];
-        var finger4bTip = landmarks.Landmark[17];
+        var wristL = landmarks.Landmark[0];
 
         var finger1 = new Vector2(finger1Tip.X, finger1Tip.Y);
         var finger2 = new Vector2(finger2Tip.X, finger2Tip.Y);
         var finger3 = new Vector2(finger3Tip.X, finger3Tip.Y);
         var finger4 = new Vector2(finger4Tip.X, finger4Tip.Y);
+        var wrist = new Vector2(wristL.X, wristL.Y);
 
-        var finger1b = new Vector2(finger1bTip.X, finger1bTip.Y);
-        var finger2b = new Vector2(finger2bTip.X, finger2bTip.Y);
-        var finger3b = new Vector2(finger3bTip.X, finger3bTip.Y);
-        var finger4b = new Vector2(finger4bTip.X, finger4bTip.Y);
+        // Debug.Log("distances " + Vector2.Distance(finger1,wrist) + " " + Vector2.Distance(finger2,wrist) + " " 
+        // + Vector2.Distance(finger3,wrist) + " " + Vector2.Distance(finger4,wrist));
 
-        //check fingertip to fingertip distance (close) and fingertip to joint distance (far)
-
-        
-        if (Vector2.Distance(finger1, finger2) > paperThreshold || Vector2.Distance(finger2, finger3) > paperThreshold 
-        || Vector2.Distance(finger3, finger4) > paperThreshold + .35f) {
-            //Debug.Log ("distances " + Vector2.Distance(finger1, finger2) + " " + Vector2.Distance(finger2, finger3) + " " + Vector2.Distance(finger3, finger4));
+        //check fingertip distance to palm
+        if (Vector2.Distance(finger1, wrist) < paperThreshold || Vector2.Distance(finger2, wrist) < paperThreshold
+        || Vector2.Distance(finger3, wrist) < paperThreshold || Vector2.Distance(finger4, wrist) < paperThreshold)
+        {
             return false;
         }
 
-        // if ((Vector2.Distance(finger1, finger2) > paperThreshold || Vector2.Distance(finger2, finger3) > paperThreshold 
-        // || Vector2.Distance(finger3, finger4) > paperThreshold) && 
-        // (Vector2.Distance(finger1, finger1b) < rockThreshold 
-        // && Vector2.Distance(finger2, finger2b) < rockThreshold && Vector2.Distance(finger3, finger3b) < rockThreshold 
-        // && Vector2.Distance(finger4, finger4b) < rockThreshold))
-        // {
-        //     return false;
-        // }
 
+
+        summonPaper = true;
         return true;
     }
 }

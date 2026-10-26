@@ -2,14 +2,23 @@ using UnityEngine;
 
 public class SummonBehavior : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        Summoner summoner = GetComponent<Summoner>();
     }
 
-    // Update is called once per frame
     void Update()
+    {
+        //loop through all objects in summoner.summons for boid behavior
+        //check for collision
+    }
+
+    void Kill(int self, int other)
+    {
+        //check self type vs other type, if self can kill, use destroy() on other
+    }
+
+    void Destruct()
     {
         
     }
