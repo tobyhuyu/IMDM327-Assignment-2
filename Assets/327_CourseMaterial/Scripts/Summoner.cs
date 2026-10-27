@@ -1,4 +1,5 @@
 //using System.Diagnostics;
+using System.Collections.Generic;
 using UnityEditor.Build.Content;
 using UnityEditor.SearchService;
 using UnityEngine;
@@ -8,25 +9,34 @@ public class Summoner : MonoBehaviour
     public GameObject rock;
     public GameObject paper;
     public GameObject scissors;
+
+    public Material red;
+    public Material blue;
+
     public int entityLim = 100;
 
-    private int entityCount;
+    public int entityCount;
     public float cooldown = 2f;
     private bool canSummon;
     private float timer = 0f;
+    private SummonBehavior summonBehavior;
 
     public struct Summon
     {             
         public GameObject obj;
         public int type;
         public int side;
+        public float mass;
+        public Vector3 velocity;
+        public Vector3 acceleration;
     }
-    public Summon[] summons; 
+    public List<Summon> summons; 
     private GameObject[] prefabs;
 
     private void Start()
     {
-        summons = new Summon[entityLim];
+        summonBehavior = GetComponent<SummonBehavior>();
+        summons = new List<Summon>{};
         prefabs = new GameObject[4];
         entityCount = 0;
         canSummon = true;
@@ -38,6 +48,7 @@ public class Summoner : MonoBehaviour
 
     void FixedUpdate()
     {
+        //Debug.Log("eount " + entityCount);
         timer += Time.deltaTime;
 
         if (!canSummon && timer >= cooldown)
@@ -54,6 +65,12 @@ public class Summoner : MonoBehaviour
 
     public void Create(int side, int type)
     {
+        //don't summon if battle has started
+        // if (summonBehavior.start)
+        // {
+        //     return;
+        // }
+
         if (entityCount >= 100)
         {
             Debug.Log("Entity limit reached!");
@@ -65,25 +82,32 @@ public class Summoner : MonoBehaviour
            // Debug.Log("Wait for Cooldown!");
             return;
         }
-
-        GameObject summoned = Instantiate(prefabs[type]);
+        Summon currSummon = new Summon();
+        GameObject obj = Instantiate(prefabs[type]);
 
         if (side == 0)
         {
-            summoned.transform.position = new Vector3(Random.Range(-6.8f, 6.8f), 0, Random.Range(17.5f, 12.7f));
-            //change color to red
+            obj.transform.position = new Vector3(Random.Range(-6.8f, 6.8f), 0, Random.Range(17.5f, 12.7f));
+            obj.GetComponent<Renderer>().material = red;
+            currSummon.velocity = 5f * new Vector3(0,0,-1);
 
         } else
         {
-            summoned.transform.position = new Vector3(Random.Range(-5.5f, 5.8f), 0, Random.Range(2.5f, 5f));
-            //change color to blue
+            obj.transform.position = new Vector3(Random.Range(-5.5f, 5.8f), 0, Random.Range(2.5f, 5f));
+            obj.GetComponent<Renderer>().material = blue;
+            currSummon.velocity = 5f * new Vector3(0,0,1);
         }
         
-        summons[entityCount].type = type;
-        summons[entityCount].side = side;
-        summons[entityCount].obj = summoned;
+        currSummon.type = type;
+        currSummon.side = side;
+        currSummon.obj = obj;
+        currSummon.mass = 1;
         
-        Debug.Log("Created summon type " + type + " on side " + side);
+
+     
+        summons.Add(currSummon);
+        
+        //Debug.Log("Created summon type " + type + " on side " + side);
         entityCount++;
 
         if (side == 1)

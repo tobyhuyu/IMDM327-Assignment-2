@@ -7,13 +7,14 @@ public class ComputerBehavior : MonoBehaviour
     private float checkTimer = 0f;
     private Summoner summoner;
     private float summonTime;
-    private int thresh = 4;
+    //private int thresh = 4;
+    public GameObject mediapipe;
 
     void Start()
     {
         summonTime = 2f;
         //Random.Range(summoner.cooldown, summoner.cooldown+2f);
-        summoner = GetComponent<Summoner>();   
+        summoner = mediapipe.GetComponent<Summoner>();   
     }
 
     void FixedUpdate()
