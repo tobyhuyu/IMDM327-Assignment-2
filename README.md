@@ -1,3 +1,7 @@
+ASSIGNMENT 2 DEMO
+
+https://github.com/user-attachments/assets/bdd9d14d-5e0f-4574-a9b2-78b6c2ec9b66
+_________________________________________________________________________________
 # IMDM 327 — Computational Virtual Reality
 
 Unity course materials for **IMDM 327, Fall 2026**, taught by **Dr. Myungin Lee** at the University of Maryland. These examples are for classroom instruction, experimentation, and student projects.
