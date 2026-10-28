@@ -19,7 +19,7 @@ public class Summoner : MonoBehaviour
     public float cooldown = 2f;
     private bool canSummon;
     private float timer = 0f;
-    private SummonBehavior summonBehavior;
+    public SummonBehavior summonBehavior;
 
     public struct Summon
     {             
@@ -66,10 +66,10 @@ public class Summoner : MonoBehaviour
     public void Create(int side, int type)
     {
         //don't summon if battle has started
-        // if (summonBehavior.start)
-        // {
-        //     return;
-        // }
+        if (summonBehavior.start < summonBehavior.timer)
+        {
+            return;
+        }
 
         if (entityCount >= 100)
         {
@@ -87,17 +87,15 @@ public class Summoner : MonoBehaviour
 
         if (side == 0)
         {
-            obj.transform.position = new Vector3(Random.Range(-6.8f, 6.8f), 0, Random.Range(17.5f, 12.7f));
+            obj.transform.position = new Vector3(Random.Range(-6.5f, 6.5f), 0, Random.Range(11f, 16f));
             obj.GetComponent<Renderer>().material = red;
-            currSummon.velocity = 5f * new Vector3(0,0,-1);
 
         } else
         {
-            obj.transform.position = new Vector3(Random.Range(-5.5f, 5.8f), 0, Random.Range(2.5f, 5f));
+            obj.transform.position = new Vector3(Random.Range(-6.5f, 6.5f), 0, Random.Range(3f, 7f));
             obj.GetComponent<Renderer>().material = blue;
-            currSummon.velocity = 5f * new Vector3(0,0,1);
         }
-        
+
         currSummon.type = type;
         currSummon.side = side;
         currSummon.obj = obj;

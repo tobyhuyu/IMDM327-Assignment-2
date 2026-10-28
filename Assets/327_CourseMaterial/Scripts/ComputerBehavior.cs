@@ -21,12 +21,13 @@ public class ComputerBehavior : MonoBehaviour
     {   
         summmonTimer += Time.deltaTime;
         checkTimer += Time.deltaTime;
-
-        if (summmonTimer >= summonTime)
-        {
-            TrySummon();
-            summmonTimer = 0f;
-        }
+            if (summmonTimer >= summonTime)
+            {
+                TrySummon();
+                summmonTimer = 0f;
+            }
+        
+        
 
         //check if player is summoning a lot of one specific type, if yes then up the chance the computer will summon its counter 
         // if (checkTimer >= checkTime)
@@ -62,6 +63,6 @@ public class ComputerBehavior : MonoBehaviour
     void TrySummon()
     {
         summoner.Create(0, Random.Range(1,4));
-        summonTime = Random.Range(.25f, summoner.cooldown);
+        summonTime = Random.Range(.75f, summoner.cooldown + .1f);
     }
 }

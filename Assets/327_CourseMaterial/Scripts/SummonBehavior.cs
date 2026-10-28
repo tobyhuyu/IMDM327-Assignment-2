@@ -4,21 +4,29 @@ public class SummonBehavior : MonoBehaviour
 {
     private const float G = 500f;
     private Summoner summoner;
-    public float maxVel = 5f;
+    public float maxVel = 2f;
     public GameObject barrier;
-    public bool start;
+    public float start;
+    private float minX = -6.5f;
+    private float maxX = 6.5f;
+    private float minZ = 3f;
+    private float maxZ = 16f;
+    public float timer = 0f;
+    //public float movementStrength = 0.001f;
 
     void Start()
     {
         summoner = GetComponent<Summoner>();
-        start = barrier.GetComponent<Barrier>().startTrigger;
+        start = barrier.GetComponent<Barrier>().gracePD;
     }
 
     void Update()
     {
-        // if (start)
-        // {
 
+        timer += Time.deltaTime;
+
+        if (timer >= start)
+        {
         for (int i = 0; i < summoner.entityCount; i++)
         {
 
@@ -29,13 +37,14 @@ public class SummonBehavior : MonoBehaviour
             {
                 if (j != i)
                 {
+                    if (curr.side != summoner.summons[j].side)
+                    {
                     //gravity
                     Vector3 distance = curr.obj.transform.position - summoner.summons[j].obj.transform.position;
                     Vector3 gravity = CalculateGravity(distance, curr.mass, summoner.summons[j].mass);
 
                     //check side
-                    if (curr.side != summoner.summons[j].side)
-                    {
+                    
                         //check type
                         //chase takes priority over avoid
 
@@ -56,9 +65,6 @@ public class SummonBehavior : MonoBehaviour
                             curr.acceleration += gravity / curr.mass;
                         }
                     }
-
-                    //check for collision
-                    
                 }
             }
             summoner.summons[i] = curr;
@@ -71,6 +77,7 @@ public class SummonBehavior : MonoBehaviour
             curr.velocity += curr.acceleration * Time.deltaTime;
             curr.velocity = Vector3.ClampMagnitude(curr.velocity, maxVel);
 
+            
             summoner.summons[i] = curr;
         }
 
@@ -78,21 +85,27 @@ public class SummonBehavior : MonoBehaviour
         {
             Summoner.Summon curr = summoner.summons[i];
             //acceleration
-            curr.obj.transform.position += summoner.summons[i].velocity * Time.deltaTime;
+            curr.obj.transform.position += curr.velocity * Time.deltaTime;
+            Vector3 pos = curr.obj.transform.position;
+            
+            //bouncy
+            if (pos.x <= minX || pos.x >= maxX)
+            {
+                curr.velocity.x *= -1f;
+            }
+            if (pos.z <= minZ || pos.z >= maxZ)
+            {
+                curr.velocity.z *= -1f;
+            }
+
+            //restrict objs to platform
+            pos.x = Mathf.Clamp(pos.x, minX, maxX);
+            pos.z = Mathf.Clamp(pos.z, minZ, maxZ);
+                
+            curr.obj.transform.position = pos;
             summoner.summons[i] = curr;
         }
-        //}
-    }
-
-    void Destruct(int i)
-    {
-        Summoner.Summon toDestroy = summoner.summons[i];
-        //remove from list
-        summoner.summons.RemoveAt(i);
-
-        //destroy object
-        GameObject.Destroy(toDestroy.obj);
-        summoner.entityCount--;
+        }
     }
 
     private Vector3 CalculateGravity(Vector3 distanceVector, float m1, float m2)

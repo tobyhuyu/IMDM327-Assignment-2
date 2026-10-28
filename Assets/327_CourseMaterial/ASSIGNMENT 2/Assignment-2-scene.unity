@@ -775,6 +775,7 @@ MonoBehaviour:
   entityLim: 100
   entityCount: 0
   cooldown: 1
+  summonBehavior: {fileID: 0}
 --- !u!114 &570574672
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -887,9 +888,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adb5011e2b2d5a54bb2c1a75fe49db0b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SummonBehavior
-  maxVel: 5
+  maxVel: 2
   barrier: {fileID: 411362133}
   start: 0
+  timer: 0
 --- !u!1001 &5474184055459832069
 PrefabInstance:
   m_ObjectHideFlags: 0
